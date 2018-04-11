@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import os
 import sys
 import logging
+import signal
 import subprocess
 from functools import partial
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt, QProcess
 from PyQt5.QtWidgets import (
-        QDialog, QWidget, QSystemTrayIcon, QMenu, QApplication,
-        QPushButton, QLabel, QFrame, QFileDialog, QGridLayout,
-        QLineEdit, QDialogButtonBox, QVBoxLayout)
+    QWidget, QSystemTrayIcon, QMenu, QApplication, QMessageBox)
 from PyQt5.QtCore import QCoreApplication
-from vscode_launcher_tray import (
-    Config, ProjectDialog, ManageDialog)
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +26,6 @@ class OpenCCTray(QSystemTrayIcon):
         """Constructor."""
         QSystemTrayIcon.__init__(self, icon, parent)
 
-        self.config = Config()
         self.menu = None
         self._load_menu()
 
@@ -45,6 +42,8 @@ class OpenCCTray(QSystemTrayIcon):
 
         menu.addSeparator()
 
+        aboutAction = menu.addAction(self.tr("About"))
+        aboutAction.triggered.connect(self._about)
         exit_action = menu.addAction(self.tr("Exit"))
         exit_action.triggered.connect(self._quit)
 
@@ -73,27 +72,35 @@ class OpenCCTray(QSystemTrayIcon):
     def _translate_t2s(self):
         self._translate(self.CONFIG_T2S)
 
-    def _manage(self):
-        """Launch manage dialog."""
-        dirty, ok = ManageDialog.showManageDialog()
-        if ok and dirty:
-            self._update_menu()
+    def _about(self):
+        """Launch about dialog."""
+        QMessageBox.about(None, "opencc-tray", """opencc-tray
+
+Homepage: https://github.com/elleryq/opencc-tray
+Author: Yan-ren Tsai""")
 
     def _quit(self):
         """Quit."""
-        self.config.save()
         QCoreApplication.instance().quit()
 
 
 def main():
     """Main entry."""
+    # Accept ctrl-c
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
 
+    pixmaps_dir = os.path.join(
+        os.path.dirname(__file__),
+        "pixmaps"
+    )
+    pixmap = os.path.join(pixmaps_dir, "tray.png")
+
     w = QWidget()
-    tray_icon = OpenCCTray(
-        QtGui.QIcon("tray.png"),
-        w)
+    tray_icon = OpenCCTray(QtGui.QIcon(pixmap), w)
+
     tray_icon.show()
     rc = app.exec_()
 
@@ -102,7 +109,3 @@ def main():
     del app
 
     sys.exit(rc)
-
-
-if __name__ == '__main__':
-    main()
