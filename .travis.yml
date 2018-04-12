@@ -1,0 +1,34 @@
+dist: trusty
+language: python
+python:
+- 3.4_with_system_site_packages
+before_install:
+- sudo apt-get update
+- sudo apt-get install python3-all-dev debhelper python3-setuptools python3-pip apt-file
+  pyqt5-dev-tools qttools5-dev-tools qt4-dev-tools
+- sudo pip3 install stdeb
+install:
+- which python3
+- which pip3
+- pip3 --version
+- python3 -c "import sys; print(sys.version)"
+- python3 setup.py build
+- python3 setup.py --command-packages=stdeb.command bdist_deb
+- for f in deb_dist/*.deb; do echo; echo $f; dpkg --contents $f; done
+- sudo dpkg -i deb_dist/*.deb
+script:
+- which vscode-launcher-tray
+- dpkg -L python3-vscode-launcher-tray
+before_deploy:
+  - export RELEASE_DEB_FILE=$(ls deb_dist/*.deb)
+  - echo "deploying $RELEASE_DEB_FILE to GitHub releases"
+deploy:
+  provider: releases
+  api_key:
+    secure: d5/ZFaraXMrKPYrc3wnV/AQYeU610KgL8pu0OUfYnQrXDSDapq6z5VSboT4Moem93wimKIiu4WZiAqejpIZcp7C7mc/f5i7EjzVATFPiCQhy/5PT1UStkIJQft37DU+rwNjsrDB+Yg4GhtBoRm4UrCJR0d7qeFmg3QvEDYYLBM8BpPMj3xFlWaOP0bpGJ6KCXWVyWeKfewD5aLkSDI15Y6v3ESPYNogm6EkOt8XHXt4/Ju0f1ubaSQHk8xFIbl5QgnLbFnPSdA3q7Xwq10WZfXKrdNXhj84vbcEBE9PT8HDT4yqBaAdbebP2gy01LXXTdPOqQXVwyhumdeGUoqA1RQgEnlyfvm2Zpf4WyWuZK/9M4LGjzgNzB00ETaSpJ80qD1xxe1D8w6RrvzCl+FU/w6og+/ZIrM65T4y3Sc7EkkhjmCPXqQe4VhBaEWx7fODgWs7xdBGeU9ts+seQbTbkqrZAffaeRzMdFj/DuK/st0pNu9XYSI8SZSoulGXEZlUtD/faQdMJ1lwIudtoaHEJuMw61u1Cq/Tpi/Zg4OFV1LWMSF7yCp0vGN2gkOFO8nLmHjs7SeGBiLHY+HZjxZ2BpkMuQwhnzAeedZ7LKavCE7sQ7V9G4wXBpk1YwvcIiD/df5+z87IflD/gWqs0ZENhZ9lrGkYNVcfVKjT5FVdutOs=
+  file: "${RELEASE_DEB_FILE}"
+  skip_cleanup: true
+  overwrite: true
+  on:
+    repo: elleryq/opencc-tray
+    tags: true
